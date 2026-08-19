@@ -16,15 +16,14 @@
         :root {
             --bg: #080808;
             --white: #ffffff;
-            /* Soft Pastel Rainbow Palette */
             --pastel-gradient: linear-gradient(
                 45deg, 
-                #FFB7B2, /* Pink */
-                #B2B2FF, /* Lavender */
-                #B2E2FF, /* Blue */
-                #B2FFD6, /* Mint */
-                #FFE0B2, /* Peach */
-                #FFFFB2  /* Yellow */
+                #FFB7B2, 
+                #B2B2FF, 
+                #B2E2FF, 
+                #B2FFD6, 
+                #FFE0B2, 
+                #FFFFB2  
             );
             --easing: cubic-bezier(0.65, 0, 0.35, 1);
         }
@@ -86,7 +85,6 @@
                 -webkit-text-fill-color 2s ease;
         }
 
-        /* Transition state: Move to Top */
         .main-title.upwards {
             transform: translateY(calc(-50vh + 60px));
             font-size: 1.4rem;
@@ -108,6 +106,7 @@
             opacity: 0;
             transition: opacity 1s ease;
             z-index: 1001;
+            pointer-events: none;
         }
 
         /* Content Viewport */
@@ -120,7 +119,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            pointer-events: none;
+            pointer-events: none; /* Globally disabled clicks */
         }
 
         .scene {
@@ -134,6 +133,7 @@
             transform: translateY(40px);
             transition: opacity 1.2s var(--easing), transform 1.5s var(--easing);
             will-change: opacity, transform;
+            pointer-events: none; /* Scenes are non-clickable by default */
         }
 
         .scene.active {
@@ -147,7 +147,7 @@
             flex-direction: column;
             gap: 60px;
             text-align: left;
-            pointer-events: all;
+            /* pointer-events: all; <-- REMOVED THIS to prevent early clicks */
         }
 
         .cta-link {
@@ -159,29 +159,30 @@
             cursor: pointer;
             opacity: 0.6;
             transition: opacity 0.4s ease;
+            pointer-events: none; /* Disabled until active */
         }
 
         .cta-text {
             font-size: clamp(1.8rem, 4vw, 3.5rem);
         }
 
-        /* Arrow: North East to East Animation */
         .arrow-icon {
             width: clamp(35px, 5vw, 65px);
             height: auto;
             fill: none;
             stroke: currentColor;
             stroke-width: 1.5;
-            transform: rotate(-45deg); /* Default: North East */
+            transform: rotate(-45deg); 
             transition: transform 0.6s var(--easing);
         }
 
+        /* Hover states only work when pointer-events are enabled via JS */
         .cta-link:hover {
             opacity: 1;
         }
 
         .cta-link:hover .arrow-icon {
-            transform: rotate(0deg); /* Hover: East (Right) */
+            transform: rotate(0deg); 
         }
 
         @media (max-width: 768px) {
@@ -194,31 +195,27 @@
 </head>
 <body class="locked">
 
-    <!-- Brand Layer -->
     <div id="brand-layer">
         <h1 id="main-brand" class="main-title gradient-text">Founders Circle</h1>
     </div>
 
-    <!-- Persistent Hint -->
     <div id="scroll-hint">Scroll to explore</div>
 
-    <!-- Narrative Scenes -->
-    <div class="viewport">
+    <!-- The .viewport and .scene now have pointer-events: none by default -->
+    <div class="viewport" id="main-viewport">
         <div class="scene" id="s1">Student-led community</div>
         <div class="scene" id="s2">For startup founders.</div>
         <div class="scene" id="s3">For aspiring founders.</div>
         <div class="scene" id="s4">For those looking to build, learn, and connect.</div>
         <div id="s5" class="scene">For <span class="gradient-text">you.</span></div>
         
-        <!-- Interactive Last Section -->
         <div id="s6" class="scene app-container">
-            <a href="https://forms.gle/46pUQXhHyNtew1s47" target="_blank" class="cta-link">
+            <a href="https://forms.gle/46pUQXhHyNtew1s47" target="_blank" class="cta-link interactive">
                 <span class="cta-text">Application Link</span>
                 <svg class="arrow-icon" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
             </a>
             
-            <!-- Download Trigger for PDF -->
-            <a href="founderscircle.pdf" download="founderscircle.pdf" class="cta-link">
+            <a href="founderscircle.pdf" download="founderscircle.pdf" class="cta-link interactive">
                 <span class="cta-text">Cohort Profile</span>
                 <svg class="arrow-icon" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
             </a>
@@ -228,6 +225,8 @@
     <script>
         const brand = document.getElementById('main-brand');
         const hint = document.getElementById('scroll-hint');
+        const viewport = document.getElementById('main-viewport');
+        const interactiveLinks = document.querySelectorAll('.interactive');
         const scenes = [
             document.getElementById('s1'),
             document.getElementById('s2'),
@@ -237,59 +236,52 @@
             document.getElementById('s6')
         ];
 
-        /**
-         * 1. 5-Second Opening Animation
-         */
         window.addEventListener('load', () => {
             window.scrollTo(0, 0);
-
-            // Wait exactly 5 seconds with the pastel fluid motion
             setTimeout(() => {
-                // Transition to white and move up elegantly
                 brand.classList.remove('gradient-text');
                 brand.classList.add('upwards');
-                
-                // Unlock scrolling 1.2s into the upward movement
                 setTimeout(() => {
                     document.body.classList.remove('locked');
                     hint.style.opacity = '1';
                 }, 1200);
-
             }, 5000); 
         });
 
-        /**
-         * 2. Cinematic Scroll Management
-         */
         function handleNarrativeScroll() {
             const scrollY = window.scrollY;
             const vh = window.innerHeight;
             const totalHeight = document.documentElement.scrollHeight - vh;
-            
             const step = vh * 1.4; 
             
-            // "Scroll to explore" stays visible until the very end
             if (scrollY > totalHeight - 100) {
                 hint.style.opacity = '0';
             } else if (scrollY > 10) {
                 hint.style.opacity = '0.4';
             }
 
-            // Sync scenes with scroll progress
             scenes.forEach((scene, index) => {
                 const triggerPoint = (index + 0.6) * step;
                 const exitPoint = triggerPoint + step;
 
                 if (scrollY >= triggerPoint && scrollY < exitPoint) {
                     scene.classList.add('active');
-                    scene.style.pointerEvents = (index === 5) ? 'all' : 'none';
+                    
+                    // CRITICAL FIX: Only enable clicking when the last scene is reached
+                    if (index === 5) {
+                        viewport.style.pointerEvents = 'all';
+                        scene.style.pointerEvents = 'all';
+                        interactiveLinks.forEach(link => link.style.pointerEvents = 'all');
+                    } else {
+                        viewport.style.pointerEvents = 'none';
+                        scene.style.pointerEvents = 'none';
+                        interactiveLinks.forEach(link => link.style.pointerEvents = 'none');
+                    }
                 } else {
                     scene.classList.remove('active');
-                    scene.style.pointerEvents = 'none';
                 }
             });
 
-            // Subtle dimming of the brand when links are in view
             if (scrollY > step * 5.5) {
                 brand.style.opacity = '0.15';
             } else {
@@ -301,7 +293,6 @@
             requestAnimationFrame(handleNarrativeScroll);
         });
 
-        // Reset scroll position on page refresh
         window.onbeforeunload = () => window.scrollTo(0, 0);
     </script>
 </body>
