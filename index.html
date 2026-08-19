@@ -5,11 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Founders Circle</title>
     
-    <!-- Favicon -->
     <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
-
-    <!-- Premium Font Fallback -->
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
     
     <style>
@@ -17,7 +14,7 @@
             --bg: #050505;
             --white: #ffffff;
             --pastel-gradient: linear-gradient(45deg, #FFB7B2, #B2B2FF, #B2E2FF, #B2FFD6, #FFE0B2, #FFFFB2);
-            --easing: cubic-bezier(0.2, 1, 0.3, 1);
+            --easing: cubic-bezier(0.65, 0, 0.35, 1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -27,16 +24,13 @@
             color: var(--white);
             font-family: "Parmigiano Headline", "Playfair Display", serif;
             -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
-            /* Creates enough room for smooth scroll progress */
-            height: 800vh; 
+            overflow: hidden; /* Lock native scroll for cinematic hijacking */
+            height: 100vh;
+            width: 100vw;
+            touch-action: none; 
         }
 
-        body.locked {
-            overflow: hidden;
-        }
-
-        /* Branding Layer: Opening 5s logic */
+        /* Opening Title Logic (Static White for 5s) */
         #brand-layer {
             position: fixed;
             width: 100%;
@@ -53,7 +47,7 @@
             font-weight: 400;
             text-align: center;
             color: white;
-            transition: transform 2.2s var(--easing), font-size 2.2s var(--easing), opacity 1.5s ease;
+            transition: transform 2.5s var(--easing), font-size 2.5s var(--easing), opacity 1.5s ease;
         }
 
         .main-title.upwards {
@@ -62,7 +56,7 @@
             opacity: 0.4;
         }
 
-        /* Fluid Gradient - Only used for "you." now */
+        /* Fluid Gradient for "you." */
         .gradient-text {
             background: var(--pastel-gradient);
             background-size: 400% 400%;
@@ -78,7 +72,7 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* Main Cinematic Viewport */
+        /* Cinematic Content Viewport */
         .viewport {
             position: fixed;
             top: 0;
@@ -99,15 +93,21 @@
             font-size: clamp(1.8rem, 5vw, 3.8rem);
             line-height: 1.2;
             opacity: 0;
-            transform: translateY(20px) scale(0.98);
-            transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), 
-                        transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: translateY(40px);
+            transition: opacity 1.2s var(--easing), transform 1.2s var(--easing);
             will-change: opacity, transform;
+            pointer-events: none;
+        }
+
+        /* Transition States */
+        .scene.past {
+            opacity: 0;
+            transform: translateY(-40px);
         }
 
         .scene.active {
             opacity: 1;
-            transform: translateY(0) scale(1);
+            transform: translateY(0);
         }
 
         /* Scroll Instruction */
@@ -122,7 +122,7 @@
             text-transform: uppercase;
             color: rgba(255,255,255,0.3);
             opacity: 0;
-            transition: opacity 0.6s ease;
+            transition: opacity 0.8s ease;
             z-index: 1001;
         }
 
@@ -159,29 +159,32 @@
             fill: none;
             stroke: currentColor;
             stroke-width: 1.2;
-            transform: rotate(-45deg); /* Default: North East */
+            transform: rotate(-45deg); 
             transition: transform 0.5s var(--easing);
         }
 
         .cta-link:hover .arrow-icon {
-            transform: rotate(0deg); /* Hover: East */
+            transform: rotate(0deg); 
         }
 
         @media (max-width: 768px) {
             .main-title.upwards { transform: translateY(calc(-50vh + 50px)); }
-            .scene { width: 90%; }
         }
     </style>
 </head>
-<body class="locked">
+<body>
 
+    <!-- Persistent Branding -->
     <div id="brand-layer">
         <h1 id="main-brand" class="main-title">Founders Circle</h1>
     </div>
 
+    <!-- Instruction -->
     <div id="scroll-hint">Scroll to explore</div>
 
+    <!-- The Slide Viewport -->
     <div class="viewport" id="main-viewport">
+        <div class="scene" id="s0"></div> <!-- Buffer scene for opening -->
         <div class="scene" id="s1">Student-led community</div>
         <div class="scene" id="s2">For startup founders.</div>
         <div class="scene" id="s3">For aspiring founders.</div>
@@ -207,76 +210,101 @@
         const scenes = document.querySelectorAll('.scene');
         const interactives = document.querySelectorAll('.interactive');
 
-        // 1. INTRO SEQUENCE
-        // Show "Founders Circle" in white for 5 seconds, then move up
+        let currentScene = 0;
+        let isLocked = true;
+        let isAnimating = false;
+        const totalScenes = scenes.length;
+
+        /**
+         * 1. 5-SECOND OPENING SEQUENCE
+         */
         window.addEventListener('load', () => {
-            window.scrollTo(0, 0);
+            // Force reset to top of logic
+            currentScene = 0;
             
             setTimeout(() => {
+                // At 5 seconds, move title up
                 brand.classList.add('upwards');
                 
-                setTimeout(() => {
-                    document.body.classList.remove('locked');
-                    hint.style.opacity = '1';
-                }, 1000); // Wait for title movement to finish before allowing scroll
+                // Allow user interaction
+                isLocked = false;
+                hint.style.opacity = '1';
+                
+                // Initialize the first text scene
+                scenes[0].classList.add('active');
             }, 5000); 
         });
 
-        // 2. SMOOTH SCROLL ENGINE
-        // This maps the window scroll position to scene indices for a "liquid" flow
-        function updateExperience() {
-            const scrollY = window.scrollY;
-            const vh = window.innerHeight;
-            
-            // Adjust this for "scroll sensitivity"
-            // Higher number = more scrolling required to move scenes
-            const scrollStep = vh * 1.2; 
-            
-            const totalScrollHeight = document.documentElement.scrollHeight - vh;
-            
-            // Manage Scroll Hint (Hides at the very end)
-            if (scrollY > totalScrollHeight - 150) {
-                hint.style.opacity = '0';
-            } else if (scrollY > 50) {
-                hint.style.opacity = '0.3';
+        /**
+         * 2. SINGLE-SCROLL NAVIGATION ENGINE
+         */
+        function navigate(direction) {
+            if (isLocked || isAnimating) return;
+
+            if (direction === 'next' && currentScene < totalScenes - 1) {
+                isAnimating = true;
+                scenes[currentScene].classList.remove('active');
+                scenes[currentScene].classList.add('past');
+                currentScene++;
+                scenes[currentScene].classList.add('active');
+            } 
+            else if (direction === 'prev' && currentScene > 0) {
+                isAnimating = true;
+                scenes[currentScene].classList.remove('active');
+                currentScene--;
+                scenes[currentScene].classList.remove('past');
+                scenes[currentScene].classList.add('active');
             }
 
-            scenes.forEach((scene, index) => {
-                // Calculate scene visibility based on scroll ranges
-                const startPoint = (index + 0.5) * scrollStep;
-                const endPoint = startPoint + scrollStep;
-
-                if (scrollY >= startPoint && scrollY < endPoint) {
-                    scene.classList.add('active');
-                    
-                    // Enable clicks ONLY on the last scene
-                    if (index === 5) {
-                        viewport.style.pointerEvents = 'all';
-                        interactives.forEach(link => link.style.pointerEvents = 'all');
-                    } else {
-                        viewport.style.pointerEvents = 'none';
-                        interactives.forEach(link => link.style.pointerEvents = 'none');
-                    }
+            if (isAnimating) {
+                // UI Changes based on current slide
+                if (currentScene === totalScenes - 1) {
+                    hint.style.opacity = '0'; // Hide "Scroll to explore" at the end
+                    viewport.style.pointerEvents = 'all';
+                    interactives.forEach(l => l.style.pointerEvents = 'all');
+                    brand.style.opacity = '0.1';
                 } else {
-                    scene.classList.remove('active');
+                    hint.style.opacity = '1';
+                    viewport.style.pointerEvents = 'none';
+                    interactives.forEach(l => l.style.pointerEvents = 'none');
+                    brand.style.opacity = '0.4';
                 }
-            });
 
-            // Subtle brand dimming as you reach the CTA
-            if (scrollY > scrollStep * 5.5) {
-                brand.style.opacity = '0.1';
-            } else {
-                brand.style.opacity = '0.4';
+                // Lock engine until animation completes
+                setTimeout(() => {
+                    isAnimating = false;
+                }, 1200);
             }
         }
 
-        // Listen for scroll with requestAnimationFrame for maximum smoothness
-        window.addEventListener('scroll', () => {
-            requestAnimationFrame(updateExperience);
+        // Desktop: Mouse Wheel
+        window.addEventListener('wheel', (e) => {
+            if (Math.abs(e.deltaY) < 15) return; 
+            if (e.deltaY > 0) navigate('next');
+            else navigate('prev');
         }, { passive: true });
 
-        // Reset scroll position on refresh
-        window.onbeforeunload = () => window.scrollTo(0, 0);
+        // Mobile: Touch Swiping
+        let touchStartY = 0;
+        window.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].pageY;
+        }, { passive: true });
+
+        window.addEventListener('touchend', (e) => {
+            const touchEndY = e.changedTouches[0].pageY;
+            const diff = touchStartY - touchEndY;
+            if (Math.abs(diff) > 40) { 
+                if (diff > 0) navigate('next');
+                else navigate('prev');
+            }
+        }, { passive: true });
+
+        // Accessibility: Keyboard
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === ' ') navigate('next');
+            if (e.key === 'ArrowUp') navigate('prev');
+        });
+
     </script>
 </body>
 </html>
