@@ -24,13 +24,13 @@
             color: var(--white);
             font-family: "Parmigiano Headline", "Playfair Display", serif;
             -webkit-font-smoothing: antialiased;
-            overflow: hidden; /* Lock native scroll for cinematic hijacking */
+            overflow: hidden; 
             height: 100vh;
             width: 100vw;
             touch-action: none; 
         }
 
-        /* Opening Title Logic (Static White for 5s) */
+        /* Opening Title Logic */
         #brand-layer {
             position: fixed;
             width: 100%;
@@ -99,7 +99,6 @@
             pointer-events: none;
         }
 
-        /* Transition States */
         .scene.past {
             opacity: 0;
             transform: translateY(-40px);
@@ -110,7 +109,7 @@
             transform: translateY(0);
         }
 
-        /* Scroll Instruction */
+        /* Dynamic Footer Hint */
         #scroll-hint {
             position: fixed;
             bottom: 40px;
@@ -118,12 +117,14 @@
             transform: translateX(-50%);
             font-family: -apple-system, system-ui, sans-serif;
             font-size: 10px;
-            letter-spacing: 0.4em;
+            letter-spacing: 0.3em;
             text-transform: uppercase;
-            color: rgba(255,255,255,0.3);
+            color: rgba(255,255,255,0.4);
             opacity: 0;
             transition: opacity 0.8s ease;
             z-index: 1001;
+            text-align: center;
+            white-space: nowrap;
         }
 
         /* Link Section */
@@ -139,22 +140,20 @@
             color: white;
             display: flex;
             align-items: center;
-            gap: 20px;
+            width: fit-content;
+            gap: 30px;
             opacity: 0.5;
-            transition: opacity 0.4s ease, transform 0.4s ease;
+            transition: opacity 0.4s ease;
             cursor: pointer;
             pointer-events: none;
         }
 
-        .cta-link:hover {
-            opacity: 1;
-            transform: translateX(10px);
-        }
+        .cta-link:hover { opacity: 1; }
 
-        .cta-text { font-size: clamp(1.5rem, 4vw, 3rem); }
+        .cta-text { font-size: clamp(1.4rem, 3.5vw, 2.8rem); }
 
         .arrow-icon {
-            width: clamp(30px, 5vw, 55px);
+            width: clamp(25px, 4vw, 45px);
             height: auto;
             fill: none;
             stroke: currentColor;
@@ -163,28 +162,25 @@
             transition: transform 0.5s var(--easing);
         }
 
-        .cta-link:hover .arrow-icon {
-            transform: rotate(0deg); 
-        }
+        .cta-link:hover .arrow-icon { transform: rotate(0deg); }
 
         @media (max-width: 768px) {
             .main-title.upwards { transform: translateY(calc(-50vh + 50px)); }
+            .cta-link { gap: 15px; }
+            #scroll-hint { font-size: 9px; white-space: normal; width: 85%; line-height: 1.6; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Persistent Branding -->
     <div id="brand-layer">
         <h1 id="main-brand" class="main-title">Founders Circle</h1>
     </div>
 
-    <!-- Instruction -->
     <div id="scroll-hint">Scroll to explore</div>
 
-    <!-- The Slide Viewport -->
     <div class="viewport" id="main-viewport">
-        <div class="scene" id="s0"></div> <!-- Buffer scene for opening -->
+        <div class="scene" id="s0"></div> <!-- Intro Buffer -->
         <div class="scene" id="s1">Student-led community</div>
         <div class="scene" id="s2">For startup founders.</div>
         <div class="scene" id="s3">For aspiring founders.</div>
@@ -193,11 +189,15 @@
         
         <div id="s6" class="scene app-container">
             <a href="https://forms.gle/46pUQXhHyNtew1s47" target="_blank" class="cta-link interactive">
-                <span class="cta-text">Application Link</span>
+                <span class="cta-text">Application</span>
                 <svg class="arrow-icon" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
             </a>
             <a href="founderscircle.pdf" download="founderscircle.pdf" class="cta-link interactive">
                 <span class="cta-text">Cohort Profile</span>
+                <svg class="arrow-icon" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+            </a>
+            <a href="https://chat.whatsapp.com/Lio5GWhFGTBHaUjPZAGdFO" target="_blank" class="cta-link interactive">
+                <span class="cta-text">Community</span>
                 <svg class="arrow-icon" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
             </a>
         </div>
@@ -213,33 +213,32 @@
         let currentScene = 0;
         let isLocked = true;
         let isAnimating = false;
+        let hasUserScrolled = false;
         const totalScenes = scenes.length;
 
-        /**
-         * 1. 5-SECOND OPENING SEQUENCE
-         */
+        const TXT_SCROLL = "Scroll to explore";
+        const TXT_RESULT = "Application result within 72 hours via your phone number.";
+
         window.addEventListener('load', () => {
-            // Force reset to top of logic
-            currentScene = 0;
-            
+            // 1. Initial 5 second wait (Static centered white)
             setTimeout(() => {
-                // At 5 seconds, move title up
                 brand.classList.add('upwards');
-                
-                // Allow user interaction
                 isLocked = false;
                 hint.style.opacity = '1';
                 
-                // Initialize the first text scene
-                scenes[0].classList.add('active');
+                // 2. Wait 3 more seconds, then auto-show first slide if user is idle
+                setTimeout(() => {
+                    if (!hasUserScrolled && currentScene === 0) {
+                        navigate('next');
+                    }
+                }, 3000);
+
             }, 5000); 
         });
 
-        /**
-         * 2. SINGLE-SCROLL NAVIGATION ENGINE
-         */
         function navigate(direction) {
             if (isLocked || isAnimating) return;
+            hasUserScrolled = true; // Mark as scrolled to stop auto-navigation
 
             if (direction === 'next' && currentScene < totalScenes - 1) {
                 isAnimating = true;
@@ -257,54 +256,42 @@
             }
 
             if (isAnimating) {
-                // UI Changes based on current slide
+                // Update Footer and Visibility States
                 if (currentScene === totalScenes - 1) {
-                    hint.style.opacity = '0'; // Hide "Scroll to explore" at the end
+                    hint.innerText = TXT_RESULT;
+                    hint.style.opacity = '0.6';
                     viewport.style.pointerEvents = 'all';
                     interactives.forEach(l => l.style.pointerEvents = 'all');
                     brand.style.opacity = '0.1';
                 } else {
-                    hint.style.opacity = '1';
+                    hint.innerText = TXT_SCROLL;
+                    hint.style.opacity = currentScene === 0 ? '0' : '0.4';
+                    if(currentScene === 1) hint.style.opacity = '1';
                     viewport.style.pointerEvents = 'none';
                     interactives.forEach(l => l.style.pointerEvents = 'none');
                     brand.style.opacity = '0.4';
                 }
 
-                // Lock engine until animation completes
-                setTimeout(() => {
-                    isAnimating = false;
-                }, 1200);
+                setTimeout(() => { isAnimating = false; }, 1300);
             }
         }
 
-        // Desktop: Mouse Wheel
         window.addEventListener('wheel', (e) => {
-            if (Math.abs(e.deltaY) < 15) return; 
-            if (e.deltaY > 0) navigate('next');
-            else navigate('prev');
+            if (Math.abs(e.deltaY) < 20) return; 
+            navigate(e.deltaY > 0 ? 'next' : 'prev');
         }, { passive: true });
 
-        // Mobile: Touch Swiping
         let touchStartY = 0;
-        window.addEventListener('touchstart', (e) => {
-            touchStartY = e.touches[0].pageY;
-        }, { passive: true });
-
+        window.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].pageY; }, { passive: true });
         window.addEventListener('touchend', (e) => {
-            const touchEndY = e.changedTouches[0].pageY;
-            const diff = touchStartY - touchEndY;
-            if (Math.abs(diff) > 40) { 
-                if (diff > 0) navigate('next');
-                else navigate('prev');
-            }
+            const diff = touchStartY - e.changedTouches[0].pageY;
+            if (Math.abs(diff) > 50) navigate(diff > 0 ? 'next' : 'prev');
         }, { passive: true });
 
-        // Accessibility: Keyboard
         window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowDown' || e.key === ' ') navigate('next');
             if (e.key === 'ArrowUp') navigate('prev');
         });
-
     </script>
 </body>
 </html>
